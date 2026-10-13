@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1677c9">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}</style>
+<title>Carafe du jour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout : une seule colonne centrée façon appli mobile ; le verre est le héros, les vagues vivent au pied de l'écran. */
+:root{
+  --bg:#eef6fb;
+  --fg:#0d2b45;
+  --muted:#5b7a93;
+  --surface:#ffffff;
+  --line:#cfe3f0;
+  --accent:#1677c9;
+  --accent-soft:#d9ecfa;
+  --water-a:#5ab8f0;
+  --water-b:#1677c9;
+  --glass:#9cc3de;
+  --wave1:rgba(22,119,201,.16);
+  --wave2:rgba(90,184,240,.22);
+  --wave3:rgba(22,119,201,.10);
+  --ok:#14866d;
+  --miss:#c4553f;
+  --fill:rgba(90,184,240,.42);
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"DM Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#071a2b; --fg:#e4f1fb; --muted:#8fb0c8; --surface:#0d2740; --line:#1c3d5c;
+    --accent:#5ab8f0; --accent-soft:#12324f; --water-a:#4fb0ea; --water-b:#1a6fb8; --glass:#4d7898;
+    --wave1:rgba(90,184,240,.14); --wave2:rgba(22,119,201,.24); --wave3:rgba(90,184,240,.08); --ok:#4fd1ac;
+    --miss:#f08a74; --fill:rgba(79,176,234,.38);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#071a2b; --fg:#e4f1fb; --muted:#8fb0c8; --surface:#0d2740; --line:#1c3d5c;
+  --accent:#5ab8f0; --accent-soft:#12324f; --water-a:#4fb0ea; --water-b:#1a6fb8; --glass:#4d7898;
+  --wave1:rgba(90,184,240,.14); --wave2:rgba(22,119,201,.24); --wave3:rgba(90,184,240,.08); --ok:#4fd1ac;
+  --miss:#f08a74; --fill:rgba(79,176,234,.38);
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;overflow-x:hidden}
+#waves{position:fixed;left:0;right:0;bottom:0;width:100%;height:34vh;pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:440px;margin:0 auto;padding-inline:20px;padding-block:20px 48px;display:flex;flex-direction:column;gap:22px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.brand{font-family:var(--display);font-weight:700;font-size:1.35rem;letter-spacing:-.01em}
+.date{color:var(--muted);font-size:.85rem;text-transform:capitalize}
+.stage{display:flex;flex-direction:column;align-items:center;gap:6px}
+.glass{width:min(72vw,280px);aspect-ratio:280/285;max-width:100%;overflow:visible}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.amount.win{animation:win 1.1s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes win{0%{transform:scale(1)}25%{transform:scale(1.18);color:var(--accent)}100%{transform:scale(1)}}
+.status.done{animation:pop .5s ease-out}
+@keyframes pop{0%{transform:translateY(6px);opacity:0}100%{transform:none;opacity:1}}
+.amount{font-family:var(--display);font-weight:700;font-size:2.6rem;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:center}
+.amount small{font-weight:500;font-size:1.05rem;color:var(--muted);letter-spacing:0}
+.status{color:var(--muted);font-size:.92rem;text-align:center;min-height:1.4em}
+.status.done{color:var(--ok);font-weight:600}
+.add{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.add button{font:600 1.05rem var(--body);color:var(--accent);background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:16px 6px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .12s, border-color .12s, background .12s}
+.add button span{font:400 .75rem var(--body);color:var(--muted)}
+.add button:hover{border-color:var(--accent)}
+.add button:active{transform:scale(.96);background:var(--accent-soft)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.log{display:flex;flex-direction:column;gap:8px}
+.log-head{display:flex;justify-content:space-between;align-items:center}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.undo{font:500 .85rem var(--body);color:var(--accent);background:none;border:0;cursor:pointer;padding:4px 0}
+.undo:disabled{color:var(--muted);opacity:.5;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:30px}
+.chip{font-size:.82rem;background:var(--accent-soft);color:var(--fg);border-radius:999px;padding:4px 10px;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:.88rem}
+details{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:4px 16px}
+summary{cursor:pointer;padding:12px 0;display:flex;justify-content:space-between;align-items:center;list-style:none;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary .goal{font-family:var(--display);color:var(--accent);font-variant-numeric:tabular-nums}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:.8rem;color:var(--muted)}
+.field input{font:500 1rem var(--body);color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;font-variant-numeric:tabular-nums}
+.note{grid-column:1/-1;font-size:.8rem;color:var(--muted);line-height:1.45}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:4px}
+.tabs button,.seg button{font:600 .92rem var(--body);border:0;border-radius:10px;padding:9px;background:none;color:var(--muted);cursor:pointer}
+.tabs button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.view{display:flex;flex-direction:column;gap:22px}
+.track-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:flex;gap:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:3px}
+.seg button{padding:6px 14px;font-size:.85rem}
+.nav{display:flex;align-items:center;gap:6px}
+.nav button{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--accent);font:600 1rem var(--body);cursor:pointer}
+.nav button:disabled{opacity:.35;cursor:default}
+.period{font-family:var(--display);font-weight:700;font-size:1.15rem;letter-spacing:-.01em;text-transform:capitalize}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;min-width:0}
+.stat b{display:block;font-family:var(--display);font-size:1.3rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:.75rem;color:var(--muted)}
+.chart svg{width:100%;height:auto;display:block}
+.rows{display:flex;flex-direction:column;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .d{text-transform:capitalize}
+.row .q{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem;text-align:right}
+.pill{font-size:.75rem;font-weight:600;border-radius:999px;padding:3px 10px;min-width:38px;text-align:center}
+.pill.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.pill.no{color:var(--miss);background:color-mix(in srgb,var(--miss) 14%,transparent)}
+.pill.na{color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .h{font-size:.7rem;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.06em}
+.cell{aspect-ratio:1;max-width:100%;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);position:relative;display:flex;align-items:flex-start;justify-content:flex-start;padding:4px 6px;box-sizing:border-box;font-size:.78rem;font-variant-numeric:tabular-nums;overflow:hidden}
+.cell.ok{border-color:var(--ok)}
+.cell.no{border-color:color-mix(in srgb,var(--miss) 55%,var(--line))}
+.cell.today{outline:2px solid var(--accent);outline-offset:1px}
+.cell.future{opacity:.4}
+.cell .lvl{position:absolute;left:0;right:0;bottom:0;background:var(--fill)}
+.cell .n{position:relative}
+.cell .tick{position:absolute;right:5px;bottom:3px;font-size:.75rem;font-weight:700;color:var(--ok)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+@media (prefers-reduced-motion: reduce){.add button{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Carafe du jour</div>
+    <div class="date" id="date"></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" id="t-today" aria-selected="true">Aujourd'hui</button>
+    <button type="button" role="tab" id="t-track" aria-selected="false">Suivi</button>
+  </nav>
+
+  <div class="view" id="v-track" hidden>
+    <div class="track-top">
+      <div class="seg">
+        <button type="button" id="m-week" aria-pressed="true">Semaine</button>
+        <button type="button" id="m-month" aria-pressed="false">Mois</button>
+      </div>
+      <div class="nav">
+        <button type="button" id="prev" aria-label="Période précédente">‹</button>
+        <button type="button" id="next" aria-label="Période suivante">›</button>
+      </div>
+    </div>
+    <div class="period" id="period"></div>
+    <div class="stats">
+      <div class="stat"><b id="sOk">–</b><span>jours OK</span></div>
+      <div class="stat"><b id="sAvg">–</b><span>moyenne / jour</span></div>
+      <div class="stat"><b id="sTot">–</b><span>total</span></div>
+    </div>
+    <div id="trackBody"></div>
+  </div>
+
+  <div class="view" id="v-today">
+  <section class="stage" aria-live="polite">
+    <svg class="glass" viewBox="-40 0 280 285" role="img" aria-label="Verre d'eau">
+      <defs>
+        <clipPath id="cup"><path d="M22 14 L178 14 L160 246 Q159 252 152 252 L48 252 Q41 252 40 246 Z"/></clipPath>
+        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--water-a)"/>
+          <stop offset="1" stop-color="var(--water-b)"/>
+        </linearGradient>
+      </defs>
+      <ellipse id="puddle" cx="100" cy="262" rx="0" ry="0" fill="var(--water-a)" opacity=".5"/>
+      <ellipse id="puddle2" cx="100" cy="262" rx="0" ry="0" fill="none" stroke="var(--water-a)" stroke-width="1.5" opacity="0"/>
+      <g clip-path="url(#cup)">
+        <path id="w2" fill="var(--water-a)" opacity=".45"/>
+        <path id="w1" fill="url(#wg)"/>
+      </g>
+      <path id="men" fill="url(#wg)"/>
+      <path d="M22 14 L178 14 L160 246 Q159 252 152 252 L48 252 Q41 252 40 246 Z" fill="none" stroke="var(--glass)" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M40 34 L52 220" stroke="var(--surface)" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+      <g id="drips"></g>
+    </svg>
+    <div class="amount"><span id="drunk">0</span> <small>/ <span id="goalTxt">2,5 L</span></small></div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section class="add" aria-label="Ajouter de l'eau">
+    <button type="button" data-ml="250">+25 cl<span>verre</span></button>
+    <button type="button" data-ml="330">+33 cl<span>canette</span></button>
+    <button type="button" data-ml="500">+50 cl<span>bouteille</span></button>
+  </section>
+
+  <section class="log">
+    <div class="log-head">
+      <span class="label">Aujourd'hui</span>
+      <button type="button" class="undo" id="undo">Annuler le dernier</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <details id="settings">
+    <summary>Mon objectif <span class="goal" id="goalSum"></span></summary>
+    <div class="form">
+      <div class="field"><label for="weight">Poids (kg)</label><input id="weight" type="number" inputmode="decimal" min="30" max="250" step="0.5"></div>
+      <div class="field"><label for="height">Taille (cm)</label><input id="height" type="number" inputmode="numeric" min="120" max="230" step="1"></div>
+      <div class="field full"><label for="manual">Objectif manuel en litres (laisser vide = calcul auto)</label><input id="manual" type="number" inputmode="decimal" min="0.5" max="6" step="0.1" placeholder="auto"></div>
+      <p class="note" id="calcNote"></p>
+    </div>
+  </details>
+  </div>
+</div>
+
+<canvas id="waves" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+(function(){
+  const KEY = 'carafe-du-jour-v1';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const today = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+
+  let state = { date: today(), entries: [], weight: 75, height: 178, manual: null, history: {} };
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
+  if (!state.history) state.history = {};
+  // Chaque sauvegarde fige le total et l'objectif du jour en cours dans l'historique
+  const save = () => {
+    state.history[state.date] = { ml: total(), goal: goal() };
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+  };
+
+  function rollDay(){ if (state.date !== today()){ state.date = today(); state.entries = []; save(); render(); } }
+
+  // Objectif : moyenne de deux estimations courantes
+  //  - 33 ml par kg de poids
+  //  - 1400 ml par m² de surface corporelle (Mosteller, utilise poids + taille)
+  function autoGoal(w, h){
+    const byWeight = w * 33;
+    const bsa = Math.sqrt(w * h / 3600);
+    const byBsa = bsa * 1400;
+    const g = (byWeight + byBsa) / 2;
+    return Math.round(Math.min(4000, Math.max(1500, g)) / 50) * 50;
+  }
+  const goal = () => state.manual ? Math.round(state.manual * 1000) : autoGoal(state.weight, state.height);
+  const total = () => state.entries.reduce((a, e) => a + e.ml, 0);
+  const L = ml => (ml/1000).toFixed(2).replace(/0$/,'').replace('.',',') + ' L';
+
+  const $ = id => document.getElementById(id);
+  $('date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long'});
+  $('weight').value = state.weight; $('height').value = state.height; $('manual').value = state.manual || '';
+
+  let target = 0, shown = 0;
+
+  function render(){
+    const g = goal(), t = total();
+    target = Math.min(3, t / g);
+    $('drunk').textContent = L(t).replace(' L','');
+    $('goalTxt').textContent = L(g);
+    $('goalSum').textContent = L(g);
+    const left = g - t;
+    const st = $('status');
+    if (t === 0){ st.textContent = 'Verre vide, la journée commence.'; st.className = 'status'; }
+    else if (left > 0){ st.textContent = 'Encore ' + L(left) + ' · ' + Math.round(t/g*100) + ' %'; st.className = 'status'; }
+    else {
+      st.textContent = t > g * 1.1 ? 'Ça déborde ! +' + L(-left) + ' au-delà de l\'objectif' : 'Objectif atteint' + (left < 0 ? ' (+' + L(-left) + ')' : '');
+      if (st.className !== 'status done') st.className = 'status done';
+    }
+
+    const chips = $('chips'); chips.innerHTML = '';
+    if (!state.entries.length){ chips.innerHTML = '<span class="empty">Rien bu pour l\'instant.</span>'; }
+    state.entries.forEach(e => {
+      const c = document.createElement('span'); c.className = 'chip';
+      c.textContent = e.t + ' · ' + (e.ml/10) + ' cl'; chips.appendChild(c);
+    });
+    $('undo').disabled = !state.entries.length;
+
+    const bsa = Math.sqrt(state.weight * state.height / 3600);
+    $('calcNote').textContent = state.manual
+      ? 'Objectif manuel actif. Videz le champ pour revenir au calcul automatique (' + L(autoGoal(state.weight, state.height)) + ').'
+      : 'Calcul : moyenne de 33 ml/kg (' + L(state.weight*33) + ') et de 1,4 L par m² de surface corporelle (' + bsa.toFixed(2).replace('.',',') + ' m² → ' + L(bsa*1400) + '), borné entre 1,5 et 4 L. C\'est une estimation : chaleur, sport ou avis médical priment.';
+    renderTrack();
+  }
+
+  // ---------- Onglet Suivi ----------
+  let mode = 'week', offset = 0;
+  const key = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const monday = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return addDays(x, -((x.getDay() + 6) % 7)); };
+  const dayInfo = d => {
+    const k = key(d), tk = today();
+    if (k > tk) return { k, future: true };
+    const h = k === tk ? { ml: total(), goal: goal() } : state.history[k];
+    if (!h) return { k, none: true };
+    return { k, ml: h.ml, goal: h.goal, ok: h.ml >= h.goal, today: k === tk };
+  };
+  const pill = i => i.future || i.none ? '<span class="pill na">—</span>' : i.ok ? '<span class="pill ok">OK</span>' : '<span class="pill no">Non</span>';
+
+  function stats(days){
+    const real = days.filter(i => !i.future && !i.none);
+    $('sOk').textContent = real.length ? real.filter(i => i.ok).length + '/' + real.length : '–';
+    const sum = real.reduce((a, i) => a + i.ml, 0);
+    $('sAvg').textContent = real.length ? L(sum / real.length) : '–';
+    $('sTot').textContent = real.length ? L(sum) : '–';
+  }
+
+  function renderTrack(){
+    const body = $('trackBody'), now = new Date();
+    $('next').disabled = offset >= 0;
+    if (mode === 'week'){
+      const start = addDays(monday(now), offset * 7);
+      const days = [...Array(7)].map((_, i) => Object.assign(dayInfo(addDays(start, i)), { date: addDays(start, i) }));
+      const end = addDays(start, 6);
+      const f = d => d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+      $('period').textContent = offset === 0 ? 'Cette semaine' : offset === -1 ? 'Semaine dernière' : f(start) + ' – ' + f(end);
+      stats(days);
+
+      const max = Math.max(2000, ...days.map(i => Math.max(i.ml || 0, i.goal || 0))) * 1.12;
+      const W = 340, top = 14, base = 150, slot = W / 7, bw = 26;
+      const y = v => base - (v / max) * (base - top);
+      let svg = '<svg viewBox="0 0 ' + W + ' 190" role="img" aria-label="Eau bue par jour sur la semaine">';
+      [0.5, 1].forEach(fr => { const v = Math.round(max * fr / 1.12 / 500) * 500; if (v > 0) svg += '<line x1="0" x2="' + W + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)" stroke-dasharray="3 4"/><text x="2" y="' + (y(v) - 4) + '" font-size="10" fill="var(--muted)">' + L(v) + '</text>'; });
+      svg += '<line x1="0" x2="' + W + '" y1="' + base + '" y2="' + base + '" stroke="var(--line)"/>';
+      days.forEach((i, n) => {
+        const cx = slot * n + slot / 2;
+        if (i.ml){
+          const h = Math.max(2, base - y(i.ml));
+          svg += '<rect x="' + (cx - bw/2) + '" y="' + (base - h) + '" width="' + bw + '" height="' + h + '" rx="6" fill="' + (i.ok ? 'var(--accent)' : 'var(--glass)') + '"/>';
+        }
+        if (i.goal) svg += '<line x1="' + (cx - bw/2 - 4) + '" x2="' + (cx + bw/2 + 4) + '" y1="' + y(i.goal) + '" y2="' + y(i.goal) + '" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" opacity=".55"/>';
+        const lbl = i.date.toLocaleDateString('fr-FR', { weekday:'short' }).replace('.', '');
+        svg += '<text x="' + cx + '" y="168" text-anchor="middle" font-size="11" font-weight="' + (i.today ? 700 : 500) + '" fill="' + (i.today ? 'var(--accent)' : 'var(--muted)') + '">' + lbl + '</text>';
+        svg += '<text x="' + cx + '" y="183" text-anchor="middle" font-size="10" fill="var(--muted)">' + i.date.getDate() + '</text>';
+      });
+      svg += '</svg>';
+
+      let rows = '<div class="rows">';
+      days.forEach(i => {
+        const d = i.date.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric' });
+        rows += '<div class="row"><span class="d">' + d + (i.today ? ' · aujourd\'hui' : '') + '</span><span class="q">' + (i.ml != null ? L(i.ml) + ' / ' + L(i.goal) : i.future ? '' : 'pas de données') + '</span>' + pill(i) + '</div>';
+      });
+      rows += '</div>';
+      body.innerHTML = '<div class="chart">' + svg + '</div><div class="legend"><span><i style="background:var(--accent)"></i>objectif atteint</span><span><i style="background:var(--glass)"></i>en dessous</span><span><i style="background:var(--fg);opacity:.55;height:3px"></i>objectif du jour</span></div>' + rows;
+      body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '14px';
+    } else {
+      const first = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+      const nDays = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+      $('period').textContent = first.toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+      const days = [...Array(nDays)].map((_, i) => Object.assign(dayInfo(new Date(first.getFullYear(), first.getMonth(), i + 1)), { n: i + 1 }));
+      stats(days);
+      let html = '<div class="cal">' + ['lun','mar','mer','jeu','ven','sam','dim'].map(d => '<div class="h">' + d + '</div>').join('');
+      html += '<div></div>'.repeat((first.getDay() + 6) % 7);
+      days.forEach(i => {
+        const pct = i.ml ? Math.min(100, Math.round(i.ml / i.goal * 100)) : 0;
+        const cls = 'cell' + (i.future ? ' future' : '') + (i.ml != null ? (i.ok ? ' ok' : ' no') : '') + (i.today ? ' today' : '');
+        const tip = i.ml != null ? L(i.ml) + ' sur ' + L(i.goal) + (i.ok ? ', OK' : ', non atteint') : i.future ? 'à venir' : 'pas de données';
+        html += '<div class="' + cls + '" title="' + i.n + ' : ' + tip + '" aria-label="' + i.n + ' : ' + tip + '"><div class="lvl" style="height:' + pct + '%"></div><span class="n">' + i.n + '</span>' + (i.ok ? '<span class="tick">✓</span>' : '') + '</div>';
+      });
+      html += '</div><div class="legend"><span><i style="background:var(--fill)"></i>niveau = part de l\'objectif bue</span><span><i style="border:1.5px solid var(--ok)"></i>OK</span><span><i style="border:1.5px solid var(--miss)"></i>non atteint</span></div>';
+      body.innerHTML = html;
+      body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '14px';
+    }
+  }
+
+  function showTab(t){
+    $('t-today').setAttribute('aria-selected', t === 'today');
+    $('t-track').setAttribute('aria-selected', t === 'track');
+    $('v-today').hidden = t !== 'today';
+    $('v-track').hidden = t !== 'track';
+    if (t === 'track') renderTrack();
+    try { localStorage.setItem(KEY + '-tab', t); } catch(e){}
+  }
+  $('t-today').addEventListener('click', () => showTab('today'));
+  $('t-track').addEventListener('click', () => showTab('track'));
+  const setMode = m => { mode = m; offset = 0; $('m-week').setAttribute('aria-pressed', m === 'week'); $('m-month').setAttribute('aria-pressed', m === 'month'); renderTrack(); };
+  $('m-week').addEventListener('click', () => setMode('week'));
+  $('m-month').addEventListener('click', () => setMode('month'));
+  $('prev').addEventListener('click', () => { offset--; renderTrack(); });
+  $('next').addEventListener('click', () => { if (offset < 0){ offset++; renderTrack(); } });
+
+  function addWater(ml){
+    rollDay();
+    const before = total(), g = goal();
+    const now = new Date();
+    state.entries.push({ ml, t: String(now.getHours()).padStart(2,'0') + 'h' + String(now.getMinutes()).padStart(2,'0') });
+    save(); render(); splash = 1;
+    if (before < g && total() >= g) celebrate();
+  }
+  document.querySelectorAll('.add button').forEach(b => b.addEventListener('click', () => addWater(+b.dataset.ml)));
+  $('undo').addEventListener('click', () => { state.entries.pop(); save(); render(); });
+  const num = (v, d) => { const n = parseFloat(String(v).replace(',','.')); return isFinite(n) && n > 0 ? n : d; };
+  $('weight').addEventListener('input', e => { state.weight = Math.min(250, num(e.target.value, state.weight)); save(); render(); });
+  $('height').addEventListener('input', e => { state.height = Math.min(230, num(e.target.value, state.height)); save(); render(); });
+  $('manual').addEventListener('input', e => { const v = num(e.target.value, null); state.manual = v ? Math.min(6, v) : null; save(); render(); });
+  setInterval(rollDay, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) rollDay(); });
+
+  // Eau dans le verre
+  const w1 = $('w1'), w2 = $('w2');
+  let splash = 0;
+  function surface(level, phase, amp, freq){
+    const y0 = 252 - level * 238;
+    let d = 'M0 260 L0 ' + y0.toFixed(1);
+    for (let x = 0; x <= 200; x += 8){
+      const y = y0 + Math.sin(x * freq + phase) * amp;
+      d += ' L' + x + ' ' + y.toFixed(1);
+    }
+    return d + ' L200 260 Z';
+  }
+
+  // Vagues de fond
+  const cv = $('waves'), ctx = cv.getContext('2d');
+  let cols = [];
+  const readCols = () => { const cs = getComputedStyle(document.documentElement); cols = ['--wave3','--wave2','--wave1'].map(v => cs.getPropertyValue(v).trim()); };
+  readCols();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readCols);
+  new MutationObserver(readCols).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+  function size(){ const r = devicePixelRatio || 1; cv.width = cv.clientWidth * r; cv.height = cv.clientHeight * r; ctx.setTransform(r,0,0,r,0,0); }
+  addEventListener('resize', size); size();
+
+  // ---------- Débordement : ménisque bombé, gouttes qui tombent, flaque qui grandit ----------
+  const men = $('men'), pud = $('puddle'), pud2 = $('puddle2'), dripG = $('drips');
+  const drips = []; let spawnAcc = 0, puddleR = 0, ripple = 0;
+  function spawnDrip(){
+    const left = Math.random() < 0.5;
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+    const r = 2.5 + Math.random() * 2;
+    el.setAttribute('rx', r); el.setAttribute('ry', r); el.setAttribute('fill', 'var(--water-a)');
+    dripG.appendChild(el);
+    drips.push({ el, r, x: left ? 19 : 181, y: 13, vx: (left ? -1 : 1) * (8 + Math.random() * 24), vy: -15 - Math.random() * 35 });
+  }
+  function overflow(t, dt, over){
+    const on = over > 0.002;
+    if (on){
+      const bulge = 4 + Math.min(1, over * 3) * 5 + Math.sin(t * 3) * 1.2;
+      let d = 'M22 15';
+      for (let x = 22; x <= 178; x += 6){
+        const u = (x - 22) / 156;
+        d += ' L' + x + ' ' + (15 - Math.sin(u * Math.PI) * bulge + Math.sin(x * 0.08 + t * 4) * 0.8).toFixed(1);
+      }
+      men.setAttribute('d', d + ' L178 15 Z');
+    } else men.setAttribute('d', '');
+
+    const goalR = on ? 60 + Math.min(1.2, over) * 55 : 0;
+    puddleR = reduce ? goalR : puddleR + (goalR - puddleR) * 0.03;
+    pud.setAttribute('rx', puddleR.toFixed(1)); pud.setAttribute('ry', (puddleR * 0.11).toFixed(1));
+    ripple = Math.max(0, ripple - dt * 1.6);
+    pud2.setAttribute('rx', (puddleR * (1 + (1 - ripple) * 0.18)).toFixed(1));
+    pud2.setAttribute('ry', (puddleR * 0.11 * (1 + (1 - ripple) * 0.4)).toFixed(1));
+    pud2.setAttribute('opacity', (ripple * 0.7).toFixed(2));
+
+    if (on && !reduce){
+      spawnAcc += dt * Math.min(9, 1.5 + over * 12);
+      while (spawnAcc >= 1){ spawnAcc--; spawnDrip(); }
+    }
+    for (let i = drips.length - 1; i >= 0; i--){
+      const p = drips[i];
+      p.vy += 420 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.y > 258){ p.el.remove(); drips.splice(i, 1); ripple = 1; continue; }
+      p.el.setAttribute('cx', p.x.toFixed(1)); p.el.setAttribute('cy', p.y.toFixed(1));
+      p.el.setAttribute('ry', (p.r * (1 + Math.min(1.6, Math.max(0, p.vy) / 220))).toFixed(1));
+    }
+  }
+
+  // ---------- Célébration : gerbe de gouttes et onde quand l'objectif est atteint ----------
+  const fx = $('fx'), fctx = fx.getContext('2d');
+  let parts = [], rings = [], fxOn = false, fxLast = 0, ringColor = '#1677c9';
+  function celebrate(){
+    const am = document.querySelector('.amount');
+    am.classList.remove('win'); void am.offsetWidth; am.classList.add('win');
+    if (navigator.vibrate) try { navigator.vibrate([40, 60, 40]); } catch(e){}
+    if (reduce) return;
+    const r = devicePixelRatio || 1;
+    fx.width = innerWidth * r; fx.height = innerHeight * r; fctx.setTransform(r, 0, 0, r, 0, 0);
+    const g = document.querySelector('.glass').getBoundingClientRect();
+    const cx = g.left + g.width / 2, cy = g.top + g.height * 0.06;
+    const cs = getComputedStyle(document.documentElement);
+    const colors = ['--water-a', '--accent', '--ok'].map(v => cs.getPropertyValue(v).trim());
+    ringColor = colors[1];
+    for (let i = 0; i < 80; i++){
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.15;
+      const sp = 240 + Math.random() * 420;
+      parts.push({ x: cx + (Math.random() - 0.5) * g.width * 0.5, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 2.5 + Math.random() * 4, c: colors[i % 3], life: 1 });
+    }
+    rings.push({ x: cx, y: cy, t: 0 }, { x: cx, y: cy, t: -0.18 });
+    if (!fxOn){ fxOn = true; fxLast = 0; requestAnimationFrame(fxLoop); }
+  }
+  function fxLoop(ts){
+    const dt = fxLast ? Math.min(0.05, (ts - fxLast) / 1000) : 0.016; fxLast = ts;
+    fctx.clearRect(0, 0, innerWidth, innerHeight);
+    rings = rings.filter(o => (o.t += dt) < 1);
+    rings.forEach(o => {
+      if (o.t < 0) return;
+      fctx.globalAlpha = 1 - o.t; fctx.strokeStyle = ringColor;
+      fctx.lineWidth = 3 * (1 - o.t) + 0.5;
+      fctx.beginPath(); fctx.ellipse(o.x, o.y, 30 + o.t * 220, (30 + o.t * 220) * 0.35, 0, 0, Math.PI * 2); fctx.stroke();
+    });
+    parts = parts.filter(p => (p.life -= dt * 0.65) > 0 && p.y < innerHeight + 20);
+    parts.forEach(p => {
+      p.vy += 760 * dt; p.vx *= 0.995; p.x += p.vx * dt; p.y += p.vy * dt;
+      fctx.globalAlpha = Math.min(1, p.life * 1.6); fctx.fillStyle = p.c;
+      fctx.save(); fctx.translate(p.x, p.y); fctx.rotate(Math.atan2(p.vy, p.vx));
+      fctx.beginPath(); fctx.ellipse(0, 0, p.r * 1.9, p.r, 0, 0, Math.PI * 2); fctx.fill(); fctx.restore();
+    });
+    fctx.globalAlpha = 1;
+    if (parts.length || rings.length) requestAnimationFrame(fxLoop);
+    else { fxOn = false; fctx.clearRect(0, 0, innerWidth, innerHeight); }
+  }
+
+  let lastTs = 0;
+  function frame(ts){
+    const t = ts / 1000;
+    const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0; lastTs = ts;
+    shown += (target - shown) * 0.06;
+    splash *= 0.97;
+    const lvl = Math.min(1, shown), over = Math.max(0, shown - 1);
+    const amp = lvl < 0.005 ? 0 : 3 + splash * 6 + Math.min(1, over * 4) * 2;
+    w1.setAttribute('d', surface(lvl, t * 2.2, amp, 0.045));
+    w2.setAttribute('d', surface(lvl + (lvl > 0.005 ? 0.012 : 0), -t * 1.7 + 1, amp * 1.2, 0.035));
+    overflow(t, dt, over);
+
+    const W = cv.clientWidth, H = cv.clientHeight;
+    ctx.clearRect(0, 0, W, H);
+    [[0.30, 0.9, 18, 0.006], [0.48, -0.7, 14, 0.009], [0.64, 0.5, 10, 0.012]].forEach((p, i) => {
+      ctx.beginPath(); ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 10){
+        ctx.lineTo(x, H * p[0] + Math.sin(x * p[3] + t * p[1]) * p[2] + Math.sin(x * p[3] * 2.3 + t * p[1] * 0.6) * p[2] * 0.35);
+      }
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fillStyle = cols[i]; ctx.fill();
+    });
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  render();
+  // Raccourcis Android : ?add=250 ajoute directement un verre
+  try {
+    const q = new URLSearchParams(location.search).get('add');
+    if (location.search) history.replaceState(null, '', location.pathname);
+    if (q && +q > 0 && +q <= 2000) setTimeout(() => addWater(+q), 300);
+  } catch(e){}
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  try { if (localStorage.getItem(KEY + '-tab') === 'track') showTab('track'); } catch(e){}
+  if (reduce){ shown = target; frame(0); setInterval(() => { shown = target; frame(0); }, 500); }
+  else requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
